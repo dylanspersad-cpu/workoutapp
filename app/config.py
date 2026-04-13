@@ -23,3 +23,7 @@ class Settings(BaseSettings):
     ai_model_name: str = ""
 
     model_config = SettingsConfigDict(env_file=".env")
+    
+    def model_post_init(self, __context):
+        if self.database_uri.startswith("postgres://"):
+            self.database_uri = self.database_uri.replace("postgres://", "postgresql://", 1)
