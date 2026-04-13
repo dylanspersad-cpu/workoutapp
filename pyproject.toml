@@ -23,6 +23,7 @@ dependencies = [
     "python-jose",
     "pytest-asyncio",
     "pytest",
+    "requests",
     "ruff",
     "sqlmodel",
     "tabulate",

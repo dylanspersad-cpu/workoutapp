@@ -1,0 +1,37 @@
+{% extends "authenticated-base.html" %}
+{% block title %}{{ preset.name }} Preset | Workout Remixer{% endblock %}
+
+{% block subpage_content %}
+<div class="page-header">
+    <div>
+        <h2 class="fw-bold mb-2">{{ preset.name }}</h2>
+        <p class="text-muted mb-0">{{ preset.description }}</p>
+    </div>
+
+    <div class="page-header-actions">
+        <form method="POST" action="/presets/{{ preset.slug }}/use">
+            <button type="submit" class="btn btn-primary">Use This Preset</button>
+        </form>
+        <a href="/app" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h4 class="fw-bold mb-3">Exercises</h4>
+
+        <div class="row">
+            {% for item in preset["items"] %}
+            <div class="col-md-6 mb-3">
+                <div class="border rounded p-3 h-100">
+                    <h5 class="fw-bold mb-2">{{ item.workout_name }}</h5>
+                    <p class="mb-1"><strong>Sets:</strong> {{ item.sets or "-" }}</p>
+                    <p class="mb-1"><strong>Reps:</strong> {{ item.reps or "-" }}</p>
+                    <p class="mb-0"><strong>Notes:</strong> {{ item.notes or "-" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

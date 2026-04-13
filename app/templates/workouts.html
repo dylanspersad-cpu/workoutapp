@@ -1,0 +1,176 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Browse Workouts | Workout Remixer{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .no-hover-lift {
+        transition: none !important;
+    }
+    .no-hover-lift:hover {
+        transform: none !important;
+        box-shadow: 0 2px 8px rgba(22, 29, 37, 0.04) !important;
+        border-color: var(--border) !important;
+    }
+</style>
+{% endblock %}
+
+{% block subpage_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Browse Workouts</h2>
+            <p class="text-muted mb-0">Search and view available workouts.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 no-hover-lift">
+        <div class="card-body">
+            <form method="GET" action="/workouts" class="row g-3">
+                <div class="col-md-10">
+                    <input
+                        type="text"
+                        class="form-control"
+                        name="q"
+                        placeholder="Search by name, category, muscle, equipment, difficulty"
+                        value="{{ q }}"
+                    >
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for workout in workouts %}
+        <div class="col-md-6 col-xl-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <img
+                        src="/static/img/workouts/{{ workout.image_filename }}"
+                        alt="{{ workout.name }}"
+                        style="width: 120px; height: 120px; object-fit: contain; float: right; margin-left: 12px; margin-bottom: 8px; border-radius: 10px;"
+                    >
+
+                    <h5 class="card-title fw-bold">{{ workout.name }}</h5>
+                    <p class="mb-1"><strong>Category:</strong> {{ workout.category }}</p>
+                    <p class="mb-1"><strong>Target Muscle:</strong> {{ workout.target_muscle }}</p>
+                    <p class="mb-1"><strong>Equipment:</strong> {{ workout.equipment }}</p>
+                    <p class="mb-1"><strong>Difficulty:</strong> {{ workout.difficulty }}</p>
+                    {% if workout.category in ["Cardio", "Strength/Cardio"] and workout.duration_minutes and workout.duration_minutes > 0 %}
+                    <p class="mb-2"><strong>Duration:</strong> {{ workout.duration_minutes }} mins</p>
+                    {% endif %}
+                    <p class="text-muted mb-2">{{ workout.instructions }}</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if workout.youtube_url %}
+                        <a href="{{ workout.youtube_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            Watch Form Demo
+                        </a>
+                        {% endif %}
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-primary"
+                            onclick="openAddToRoutine({{ workout.id }}, '{{ workout.name | replace("'", "\\'") }}')"
+                        >
+                            + Add to Routine
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">No workouts found.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add to Routine Modal -->
+<div class="modal fade" id="addToRoutineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Add to Routine</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Adding: <strong id="modalWorkoutName"></strong></p>
+
+                <div id="noRoutinesMsg" class="alert alert-info d-none">
+                    You have no routines yet. <a href="/routines/create" class="alert-link">Create one first.</a>
+                </div>
+
+                <div id="routineSelectSection">
+                    <form id="addToRoutineForm" method="POST" action="">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Routine</label>
+                            <select class="form-select" name="routine_id" id="routineSelect" required>
+                                <option value="">-- Choose a routine --</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-4 mb-3">
+                                <label class="form-label">Sets</label>
+                                <input type="number" class="form-control" name="sets" min="1">
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label class="form-label">Reps</label>
+                                <input type="number" class="form-control" name="reps" min="1">
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label class="form-label">Duration (s)</label>
+                                <input type="number" class="form-control" name="duration_seconds" min="1">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                        <input type="hidden" name="workout_id" id="modalWorkoutId">
+                        <button type="submit" class="btn btn-primary w-100">Add to Routine</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block subpage_scripts %}
+<script>
+    const routines = {{ routines | tojson }};
+
+    function openAddToRoutine(workoutId, workoutName) {
+        document.getElementById('modalWorkoutName').textContent = workoutName;
+        document.getElementById('modalWorkoutId').value = workoutId;
+
+        const select = document.getElementById('routineSelect');
+        select.innerHTML = '<option value="">-- Choose a routine --</option>';
+
+        if (!routines || routines.length === 0) {
+            document.getElementById('noRoutinesMsg').classList.remove('d-none');
+            document.getElementById('routineSelectSection').classList.add('d-none');
+        } else {
+            document.getElementById('noRoutinesMsg').classList.add('d-none');
+            document.getElementById('routineSelectSection').classList.remove('d-none');
+            routines.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.name;
+                select.appendChild(opt);
+            });
+        }
+
+        // Update form action when routine selected
+        select.addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('addToRoutineForm').action = `/routines/${this.value}/add-workout`;
+            }
+        });
+
+        new bootstrap.Modal(document.getElementById('addToRoutineModal')).show();
+    }
+</script>
+{% endblock %}

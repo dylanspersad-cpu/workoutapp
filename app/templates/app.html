@@ -1,30 +1,136 @@
 {% extends "authenticated-base.html" %}
-
-{% block external_js %}
-<script src="{{ url_for('static', path='js/app.js')}}"></script>
-{% endblock %}
-
+{% block title %}Dashboard | Workout Remixer{% endblock %}
 
 {% block subpage_content %}
+<div class="page-header">
+    <div>
+        <h2 class="fw-bold mb-2">Dashboard</h2>
+        <p class="text-muted mb-0">Hey {{ user.username }}, what are we training today?</p>
+        <p class="text-muted mb-0">Build a routine, explore workouts, or start from a preset.</p>
+    </div>
+</div>
 
-    <div class="container" id="content">
-        <div class="row">
-            <p>
-                This is table is rendered on the Client. JavaScript code requests the data from <a href="/api/users">/api/users</a> and writes it to this page.
-            </p>
-        </div>
-        <div class="row">
-            <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Id</th><th>Username</th>
-                  </tr>
-                </thead>
-                <tbody id="result">
-                
-                <tbody>
-            </table>
+<div class="row mb-4">
+    <div class="col-md-6 col-xl-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="fw-bold">Browse Workouts</h5>
+                <p class="text-muted">View all available workouts and search by category, equipment, or difficulty.</p>
+                <a href="/workouts" class="btn btn-primary">View Workouts</a>
+            </div>
         </div>
     </div>
 
+    <div class="col-md-6 col-xl-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="fw-bold">My Routines</h5>
+                <p class="text-muted">See all your routines, edit them, and manage the workouts in each one.</p>
+                <a href="/routines" class="btn btn-primary">View Routines</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="fw-bold">Create a Routine</h5>
+                <p class="text-muted">Start building a new routine for your fitness goals.</p>
+                <a href="/routines/create" class="btn btn-primary">Create Routine</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h4 class="fw-bold mb-3">Preset Routine Ideas</h4>
+        <p class="text-muted mb-4">Starter routines built from the current workout library.</p>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <a href="/presets/push-day" class="text-decoration-none">
+                    <div class="border rounded p-3 h-100 bg-white">
+                        <h5 class="fw-bold mb-2">Push Day</h5>
+                        <p class="text-muted mb-2">Chest, shoulders, and triceps focused workout.</p>
+                        <small class="text-muted d-block mb-3">Bench Press • Push Up • Tricep Pushdowns • Bicep Curls</small>
+                        <span class="btn btn-sm btn-primary">View Preset</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <a href="/presets/pull-day" class="text-decoration-none">
+                    <div class="border rounded p-3 h-100 bg-white">
+                        <h5 class="fw-bold mb-2">Pull Day</h5>
+                        <p class="text-muted mb-2">Back and biceps focused workout.</p>
+                        <small class="text-muted d-block mb-3">Pull Ups • Lat Pullovers • Deadlifts • Bicep Curls</small>
+                        <span class="btn btn-sm btn-primary">View Preset</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <a href="/presets/leg-day" class="text-decoration-none">
+                    <div class="border rounded p-3 h-100 bg-white">
+                        <h5 class="fw-bold mb-2">Leg Day</h5>
+                        <p class="text-muted mb-2">Lower body workout focused on quads, glutes, and hamstrings.</p>
+                        <small class="text-muted d-block mb-3">Squat • Bulgarian Split Squats • Lunges • Hamstring Curls • Pistol Squats</small>
+                        <span class="btn btn-sm btn-primary">View Preset</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h4 class="fw-bold mb-3">Workout AI Assistant</h4>
+        <p class="text-muted mb-3">
+            Ask for routine ideas, exercise substitutions, workout splits, or help using your available equipment.
+        </p>
+
+        <form method="POST" action="/ai/chat" class="mb-4" id="ai-chat-form">
+            <div class="mb-3">
+                <textarea
+                    class="form-control"
+                    id="ai-prompt"
+                    name="prompt"
+                    rows="4"
+                    placeholder="Example: Build me a 4-day upper/lower split for muscle gain."
+                    required
+                >{{ ai_last_prompt if ai_last_prompt else "" }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Ask AI</button>
+        </form>
+
+        {% if ai_last_reply %}
+        <div class="border rounded p-3" style="background-color: #fafbff;">
+            <div class="fw-semibold mb-2">AI Response</div>
+            <div style="white-space: pre-wrap;">{{ ai_last_reply }}</div>
+        </div>
+        {% else %}
+        <div class="border rounded p-3 text-muted" style="background-color: #fafbff;">
+            Your AI response will appear here.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block subpage_scripts %}
+<script>
+    const aiPrompt = document.getElementById("ai-prompt");
+    const aiForm = document.getElementById("ai-chat-form");
+
+    if (aiPrompt && aiForm) {
+        aiPrompt.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                aiForm.submit();
+            }
+        });
+    }
+</script>
 {% endblock %}

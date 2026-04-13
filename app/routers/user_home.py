@@ -7,15 +7,16 @@ from . import router, templates
 
 
 @router.get("/app", response_class=HTMLResponse)
-async def user_home_view(
-    request: Request,
-    user: AuthDep,
-    db:SessionDep
-):
+async def dashboard_view(request: Request, user: AuthDep):
+    ai_last_prompt = request.session.get("ai_last_prompt")
+    ai_last_reply = request.session.get("ai_last_reply")
+
     return templates.TemplateResponse(
-        request=request, 
+        request=request,
         name="app.html",
         context={
-            "user": user
-        }
+            "user": user,
+            "ai_last_prompt": ai_last_prompt,
+            "ai_last_reply": ai_last_reply,
+        },
     )
